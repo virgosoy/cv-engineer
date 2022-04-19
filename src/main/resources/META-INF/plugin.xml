@@ -4,6 +4,8 @@
     <name>CV Engineer</name>
     <vendor>soy</vendor>
 
+    <!-- 依赖 java：https://plugins.jetbrains.com/docs/intellij/plugin-dependencies.html?from=jetbrains.org -->
+    <depends>com.intellij.java</depends>
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
