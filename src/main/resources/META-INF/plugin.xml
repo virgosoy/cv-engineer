@@ -9,6 +9,11 @@
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="com.github.virgosoy.cvengineer.services.MyApplicationService"/>
         <projectService serviceImplementation="com.github.virgosoy.cvengineer.services.MyProjectService"/>
+        <intentionAction>
+            <className>com.soy.plugin.idea.cvengineer.intention.DefaultCvIntention</className>
+            <!-- 有下面的属性的话才会在配置界面的 intentions 中显示，类别为此项的值，并且用户可以关闭此 intention -->
+            <category>CV Engineer intentions</category>
+        </intentionAction>
     </extensions>
 
     <applicationListeners>
