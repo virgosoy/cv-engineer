@@ -1,8 +1,8 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.virgosoy.cvengineer</id>
-    <name>cv-engineer</name>
-    <vendor>virgosoy</vendor>
+    <id>com.soy.plugin.idea.cvengineer</id>
+    <name>CV Engineer</name>
+    <vendor>soy</vendor>
 
     <depends>com.intellij.modules.platform</depends>
 
