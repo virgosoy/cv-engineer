@@ -16,6 +16,8 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.IncorrectOperationException;
+import com.soy.plugin.idea.cvengineer.template.BaseTemplateResultGenerator;
+import com.soy.plugin.idea.cvengineer.template.TemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.util.PsiJavaUtils;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
@@ -66,37 +68,36 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
         data.put("class", className);
         data.put("fields", fieldList);
 
+        final BaseTemplateResultGenerator tsType = new BaseTemplateResultGenerator("TS声明", "tsType") {
+            @Override
+            protected Object getDataModel() {
+                return data;
+            }
+        };
+
+        final BaseTemplateResultGenerator allFieldName = new BaseTemplateResultGenerator("所有字段名称", "allFieldName") {
+            @Override
+            protected Object getDataModel() {
+                return data;
+            }
+        };
+
+        final TemplateResultGenerator[] templateResultGenerators = {tsType, allFieldName};
+
         System.out.println(data);
 
         ListPopup listPopup = JBPopupFactory.getInstance().createListPopup(
-                //TODO: 具体CV内容
-                new BaseListPopupStep<String>("您想 CV 什么？", "TS声明", "所有字段名称") {
+                new BaseListPopupStep<TemplateResultGenerator>("您想 CV 什么？", templateResultGenerators) {
                     @Override
-                    public @NotNull String getTextFor(String value) {
-                        return value;
+                    public @NotNull String getTextFor(TemplateResultGenerator value) {
+                        return value.getDisplayText();
                     }
 
                     @Override
-                    public @Nullable PopupStep<?> onChosen(String selectedValue, boolean finalChoice) {
+                    public @Nullable PopupStep<?> onChosen(TemplateResultGenerator selectedValue, boolean finalChoice) {
                         return this.doFinalStep(() -> {
-                            try {
-                                final String templateString = UrlUtil.loadText(DefaultCvIntention.class.getResource("/template/tsType.ftl"));
-                                final Configuration configuration = new Configuration(Configuration.VERSION_2_3_31);
-                                final StringTemplateLoader stringTemplateLoader = new StringTemplateLoader();
-                                stringTemplateLoader.putTemplate("tsType", templateString);
-                                configuration.setTemplateLoader(stringTemplateLoader);
-                                final Template tsTypeTemplate = configuration.getTemplate("tsType");
-
-                                final StringWriter writer = new StringWriter();
-
-                                tsTypeTemplate.process(data, writer);
-
-                                final String result = writer.toString();
-
-                                System.out.println(result);
-                            } catch (IOException | TemplateException e) {
-                                e.printStackTrace();
-                            }
+                            final String result = selectedValue.process();
+                            System.out.println(result);
                         });
                     }
                 }
