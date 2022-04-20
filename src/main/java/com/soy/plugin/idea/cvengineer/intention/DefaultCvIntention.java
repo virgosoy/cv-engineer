@@ -4,7 +4,6 @@ import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
 import com.intellij.codeInspection.util.IntentionFamilyName;
 import com.intellij.codeInspection.util.IntentionName;
-import com.intellij.ide.fileTemplates.impl.UrlUtil;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
@@ -16,26 +15,21 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.IncorrectOperationException;
+import com.intellij.util.ui.TextTransferable;
 import com.soy.plugin.idea.cvengineer.template.BaseTemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.template.TemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.util.PsiJavaUtils;
-import freemarker.cache.StringTemplateLoader;
-import freemarker.template.Configuration;
-import freemarker.template.Template;
-import freemarker.template.TemplateException;
+import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.awt.*;
 import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
+ * CV 工程师 的 意图
  * @author zhengsy
  * @since 2022-04-19
  */
@@ -97,14 +91,12 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
                     public @Nullable PopupStep<?> onChosen(TemplateResultGenerator selectedValue, boolean finalChoice) {
                         return this.doFinalStep(() -> {
                             final String result = selectedValue.process();
-                            System.out.println(result);
+                            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new TextTransferable(result), null);
                         });
                     }
                 }
         );
         listPopup.showInBestPositionFor(editor);
-
-        // TODO
     }
 
     @Override
