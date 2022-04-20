@@ -24,6 +24,10 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    implementation("org.freemarker:freemarker:2.3.31")
+}
+
 // Configure Gradle IntelliJ Plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
 intellij {
     pluginName.set(properties("pluginName"))
