@@ -4,6 +4,7 @@ import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
 import com.intellij.codeInspection.util.IntentionFamilyName;
 import com.intellij.codeInspection.util.IntentionName;
+import com.intellij.ide.fileTemplates.impl.UrlUtil;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
@@ -16,9 +17,16 @@ import com.intellij.psi.PsiField;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.IncorrectOperationException;
 import com.soy.plugin.idea.cvengineer.util.PsiJavaUtils;
+import freemarker.cache.StringTemplateLoader;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -70,8 +78,26 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
 
                     @Override
                     public @Nullable PopupStep<?> onChosen(String selectedValue, boolean finalChoice) {
-                        System.out.println(selectedValue);
-                        return FINAL_CHOICE;
+                        return this.doFinalStep(() -> {
+                            try {
+                                final String templateString = UrlUtil.loadText(DefaultCvIntention.class.getResource("/template/tsType.ftl"));
+                                final Configuration configuration = new Configuration(Configuration.VERSION_2_3_31);
+                                final StringTemplateLoader stringTemplateLoader = new StringTemplateLoader();
+                                stringTemplateLoader.putTemplate("tsType", templateString);
+                                configuration.setTemplateLoader(stringTemplateLoader);
+                                final Template tsTypeTemplate = configuration.getTemplate("tsType");
+
+                                final StringWriter writer = new StringWriter();
+
+                                tsTypeTemplate.process(data, writer);
+
+                                final String result = writer.toString();
+
+                                System.out.println(result);
+                            } catch (IOException | TemplateException e) {
+                                e.printStackTrace();
+                            }
+                        });
                     }
                 }
         );
