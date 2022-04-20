@@ -22,6 +22,8 @@ import com.soy.plugin.idea.cvengineer.util.PsiJavaUtils;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.util.List;
@@ -35,6 +37,8 @@ import java.util.stream.Collectors;
  */
 public class DefaultCvIntention extends PsiElementBaseIntentionAction implements IntentionAction {
 
+    private static final Logger logger = LoggerFactory.getLogger(DefaultCvIntention.class);
+
     @Override
     public @IntentionName @NotNull String getText() {
         return "使用 CV 工程师";
@@ -42,7 +46,7 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
-        System.out.println("使用 CV 工程师");
+        logger.debug("使用 CV 工程师");
 
         final PsiClass clazz = PsiTreeUtil.getParentOfType(element, PsiClass.class, false);
         if(clazz == null){
@@ -63,8 +67,27 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
         data.put("fields", fieldList);
 
         final BaseTemplateResultGenerator tsType = new BaseTemplateResultGenerator("TS声明", "tsType") {
+            final Map<String, String> typeMap = Maps.of(
+                    "java.lang.Byte", "boolean",
+                    "java.lang.Short", "number",
+                    "java.lang.Integer", "number",
+                    "java.lang.Long", "string",
+                    "java.lang.Float", "string",
+                    "java.lang.Double", "string",
+                    "java.lang.Boolean", "boolean",
+                    "java.lang.Char", "string",
+                    "java.lang.String", "string",
+                    "java.time.LocalDate", "string",
+                    "java.time.LocalDateTime", "string"
+            );
+
+            private String convertType(String javaType){
+                return Optional.ofNullable(typeMap.get(javaType))
+                        .orElseGet(() -> javaType.substring(javaType.lastIndexOf(".") + 1));
+            }
             @Override
             protected Object getDataModel() {
+                ((List<Map<String, String>>) data.get("fields")).forEach(m -> m.put("tsType", convertType(m.get("type"))));
                 return data;
             }
         };
@@ -78,8 +101,6 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
 
         final TemplateResultGenerator[] templateResultGenerators = {tsType, allFieldName};
 
-        System.out.println(data);
-
         ListPopup listPopup = JBPopupFactory.getInstance().createListPopup(
                 new BaseListPopupStep<TemplateResultGenerator>("您想 CV 什么？", templateResultGenerators) {
                     @Override
@@ -92,6 +113,7 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
                         return this.doFinalStep(() -> {
                             final String result = selectedValue.process();
                             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new TextTransferable(result), null);
+                            logger.debug("复制内容 {} 到剪贴板成功", result);
                         });
                     }
                 }
