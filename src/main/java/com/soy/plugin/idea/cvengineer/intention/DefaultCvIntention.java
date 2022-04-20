@@ -60,6 +60,23 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
 
         System.out.println(data);
 
+        ListPopup listPopup = JBPopupFactory.getInstance().createListPopup(
+                //TODO: 具体CV内容
+                new BaseListPopupStep<String>("您想 CV 什么？", "TS声明", "所有字段名称") {
+                    @Override
+                    public @NotNull String getTextFor(String value) {
+                        return value;
+                    }
+
+                    @Override
+                    public @Nullable PopupStep<?> onChosen(String selectedValue, boolean finalChoice) {
+                        System.out.println(selectedValue);
+                        return FINAL_CHOICE;
+                    }
+                }
+        );
+        listPopup.showInBestPositionFor(editor);
+
         // TODO
     }
 
