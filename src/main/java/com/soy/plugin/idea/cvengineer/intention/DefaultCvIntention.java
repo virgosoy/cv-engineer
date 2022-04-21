@@ -17,6 +17,7 @@ import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.IncorrectOperationException;
 import com.intellij.util.ui.TextTransferable;
 import com.soy.plugin.idea.cvengineer.template.BaseTemplateResultGenerator;
+import com.soy.plugin.idea.cvengineer.template.BaseTsTemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.template.TemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.util.PsiJavaUtils;
 import org.apache.groovy.util.Maps;
@@ -66,25 +67,8 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
         data.put("class", className);
         data.put("fields", fieldList);
 
-        final BaseTemplateResultGenerator tsType = new BaseTemplateResultGenerator("TS声明", "tsType") {
-            final Map<String, String> typeMap = Maps.of(
-                    "java.lang.Byte", "boolean",
-                    "java.lang.Short", "number",
-                    "java.lang.Integer", "number",
-                    "java.lang.Long", "string",
-                    "java.lang.Float", "string",
-                    "java.lang.Double", "string",
-                    "java.lang.Boolean", "boolean",
-                    "java.lang.Char", "string",
-                    "java.lang.String", "string",
-                    "java.time.LocalDate", "string",
-                    "java.time.LocalDateTime", "string"
-            );
+        final BaseTemplateResultGenerator tsType = new BaseTsTemplateResultGenerator("TS声明", "tsType") {
 
-            private String convertType(String javaType){
-                return Optional.ofNullable(typeMap.get(javaType))
-                        .orElseGet(() -> javaType.substring(javaType.lastIndexOf(".") + 1));
-            }
             @Override
             protected Object getDataModel() {
                 ((List<Map<String, String>>) data.get("fields")).forEach(m -> m.put("tsType", convertType(m.get("type"))));
