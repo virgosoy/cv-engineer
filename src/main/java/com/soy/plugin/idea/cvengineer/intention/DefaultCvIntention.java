@@ -19,6 +19,7 @@ import com.soy.plugin.idea.cvengineer.template.BaseTemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.template.BaseTsTemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.template.TemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.util.PsiJavaUtils;
+import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -88,15 +89,16 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
         final BaseTemplateResultGenerator tsApi = new BaseTsTemplateResultGenerator("前端api", "tsApi") {
 
             /**
-             * spring requestMapping 的注解类型列表
+             * spring requestMapping 的注解类型映射
+             * key - 注解完全限定名，value - 请求方法
              */
-            final List<String> mappingMap = List.of(
-                    "org.springframework.web.bind.annotation.RequestMapping",
-                    "org.springframework.web.bind.annotation.GetMapping",
-                    "org.springframework.web.bind.annotation.PostMapping",
-                    "org.springframework.web.bind.annotation.PutMapping",
-                    "org.springframework.web.bind.annotation.DeleteMapping",
-                    "org.springframework.web.bind.annotation.PatchMapping"
+            final Map<String, String> mappingMap = Maps.of(
+                    "org.springframework.web.bind.annotation.RequestMapping", "post",
+                    "org.springframework.web.bind.annotation.GetMapping", "get",
+                    "org.springframework.web.bind.annotation.PostMapping", "post",
+                    "org.springframework.web.bind.annotation.PutMapping", "put",
+                    "org.springframework.web.bind.annotation.DeleteMapping", "delete",
+                    "org.springframework.web.bind.annotation.PatchMapping", "patch"
             );
 
             /**
@@ -123,7 +125,7 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
                     // 类上的 requestMapping 的值
                     final String classRequestMappingValue = Optional.ofNullable(method.getContainingClass())
                             .flatMap(v -> Arrays.stream(v.getAnnotations())
-                                    .filter(annotation -> mappingMap.contains(annotation.getQualifiedName()))
+                                    .filter(annotation -> mappingMap.containsKey(annotation.getQualifiedName()))
                                     .findFirst()
                             )
                             .map(annotation -> PsiJavaUtils.getFirstValueInAnnotation(annotation, "value"))
@@ -166,12 +168,19 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
                     }
                     methodData.put("returnType", Optional.ofNullable(returnTypeName).map(v -> this.convertType(v)).orElse(null));
 
-                    // 方法上的 requestMapping 的值
-                    final String methodRequestMappingValue = Arrays.stream(method.getAnnotations())
-                            .filter(annotation -> mappingMap.contains(annotation.getQualifiedName()))
-                            .findFirst()
-                            .map(annotation -> PsiJavaUtils.getFirstValueInAnnotation(annotation, "value"))
+                    // 方法上的 requestMapping 的值与请求方法
+                    String requestMethod = null;
+                    PsiAnnotation annotation = null;
+                    for(PsiAnnotation psiAnnotation: method.getAnnotations()){
+                        if((requestMethod = mappingMap.get(psiAnnotation.getQualifiedName())) != null){
+                            annotation = psiAnnotation;
+                            break;
+                        }
+                    }
+                    final String methodRequestMappingValue = Optional.ofNullable(annotation)
+                            .map(v -> PsiJavaUtils.getFirstValueInAnnotation(v, "value"))
                             .orElse(null);
+                    methodData.put("requestMethod", requestMethod);
                     methodData.put("requestMappingValue", this.resolvePathVariable(methodRequestMappingValue));
 
                     data.put("method", methodData);
