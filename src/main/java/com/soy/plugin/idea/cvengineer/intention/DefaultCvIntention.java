@@ -18,6 +18,7 @@ import com.intellij.util.ui.TextTransferable;
 import com.soy.plugin.idea.cvengineer.template.BaseTemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.template.BaseTsTemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.template.TemplateResultGenerator;
+import com.soy.plugin.idea.cvengineer.ui.MyNotifier;
 import com.soy.plugin.idea.cvengineer.util.PsiJavaUtils;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.Contract;
@@ -205,6 +206,7 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
                             final String result = selectedValue.process();
                             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new TextTransferable(result), null);
                             logger.debug("复制内容 {} 到剪贴板成功", result);
+                            MyNotifier.notifySuccess(project, "复制到剪贴板成功");
                         });
                     }
                 }

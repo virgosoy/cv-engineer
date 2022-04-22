@@ -16,6 +16,8 @@
             <!-- 有下面的属性的话才会在配置界面的 intentions 中显示，类别为此项的值，并且用户可以关闭此 intention -->
             <category>CV Engineer intentions</category>
         </intentionAction>
+        <!-- 手动注册通知 -->
+        <notificationGroup displayType="BALLOON" id="Custom Notification Group" />
     </extensions>
 
     <applicationListeners>
