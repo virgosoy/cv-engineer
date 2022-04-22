@@ -19,7 +19,7 @@ import com.soy.plugin.idea.cvengineer.template.BaseTemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.template.BaseTsTemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.template.TemplateResultGenerator;
 import com.soy.plugin.idea.cvengineer.util.PsiJavaUtils;
-import org.apache.groovy.util.Maps;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -99,6 +99,19 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
                     "org.springframework.web.bind.annotation.PatchMapping"
             );
 
+            /**
+             * 处理路径变量，将 {} 变成 ${}
+             * @param path 路径
+             * @return 处理后的路径
+             */
+            @Contract("null -> null; !null -> !null")
+            private String resolvePathVariable(@Nullable String path){
+                if(path == null) {
+                    return null;
+                }
+                return path.replace("{", "${");
+            }
+
             @Override
             protected Object getDataModel() {
                 Map<String, Object> data = new HashMap<>();
@@ -115,7 +128,7 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
                             )
                             .map(annotation -> PsiJavaUtils.getFirstValueInAnnotation(annotation, "value"))
                             .orElse(null);
-                    data.put("class", Collections.singletonMap("requestMappingValue", classRequestMappingValue));
+                    data.put("class", Collections.singletonMap("requestMappingValue", this.resolvePathVariable(classRequestMappingValue)));
 
                     Map<String, Object> methodData = new HashMap<>();
                     // 方法名
@@ -128,7 +141,7 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
                         Map<String, Object> parameterData = new HashMap<>(2);
                         parameterData.put("name", parameter.getName());
                         parameterData.put("type", Optional.ofNullable(parameter.getTypeElement())
-                                .map(PsiJavaUtils::getTypeQualifiedName)
+                                .map(v -> PsiJavaUtils.getTypeQualifiedName(v))
                                 .map(v -> this.convertType(v))
                                 .orElse(null));
                         return parameterData;
@@ -159,7 +172,7 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
                             .findFirst()
                             .map(annotation -> PsiJavaUtils.getFirstValueInAnnotation(annotation, "value"))
                             .orElse(null);
-                    methodData.put("requestMappingValue", methodRequestMappingValue);
+                    methodData.put("requestMappingValue", this.resolvePathVariable(methodRequestMappingValue));
 
                     data.put("method", methodData);
                 }
