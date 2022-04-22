@@ -1,6 +1,7 @@
 package com.soy.plugin.idea.cvengineer.template;
 
 import org.apache.groovy.util.Maps;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +30,7 @@ public abstract class BaseTsTemplateResultGenerator extends BaseTemplateResultGe
             "java.math.BigDecimal", "string"
     );
 
-    protected String convertType(String javaType){
+    protected String convertType(@NotNull String javaType){
         return Optional.ofNullable(typeMap.get(javaType))
                 .orElseGet(() -> javaType.substring(javaType.lastIndexOf(".") + 1));
     }

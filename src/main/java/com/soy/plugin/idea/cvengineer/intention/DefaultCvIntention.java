@@ -10,9 +10,8 @@ import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.ui.popup.ListPopup;
 import com.intellij.openapi.ui.popup.PopupStep;
 import com.intellij.openapi.ui.popup.util.BaseListPopupStep;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiField;
+import com.intellij.psi.*;
+import com.intellij.psi.impl.source.PsiClassReferenceType;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.IncorrectOperationException;
 import com.intellij.util.ui.TextTransferable;
@@ -71,7 +70,10 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
 
             @Override
             protected Object getDataModel() {
-                ((List<Map<String, String>>) data.get("fields")).forEach(m -> m.put("tsType", convertType(m.get("type"))));
+                ((List<Map<String, String>>) data.get("fields")).forEach(m -> m.put("tsType",
+                        Optional.ofNullable(m.get("type"))
+                                .map(this::convertType)
+                                .orElse(null)));
                 return data;
             }
         };
@@ -83,7 +85,90 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
             }
         };
 
-        final TemplateResultGenerator[] templateResultGenerators = {tsType, allFieldName};
+        final BaseTemplateResultGenerator tsApi = new BaseTsTemplateResultGenerator("前端api", "tsApi") {
+
+            /**
+             * spring requestMapping 的注解类型列表
+             */
+            final List<String> mappingMap = List.of(
+                    "org.springframework.web.bind.annotation.RequestMapping",
+                    "org.springframework.web.bind.annotation.GetMapping",
+                    "org.springframework.web.bind.annotation.PostMapping",
+                    "org.springframework.web.bind.annotation.PutMapping",
+                    "org.springframework.web.bind.annotation.DeleteMapping",
+                    "org.springframework.web.bind.annotation.PatchMapping"
+            );
+
+            @Override
+            protected Object getDataModel() {
+                Map<String, Object> data = new HashMap<>();
+
+                final PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
+
+                if(method!=null){
+
+                    // 类上的 requestMapping 的值
+                    final String classRequestMappingValue = Optional.ofNullable(method.getContainingClass())
+                            .flatMap(v -> Arrays.stream(v.getAnnotations())
+                                    .filter(annotation -> mappingMap.contains(annotation.getQualifiedName()))
+                                    .findFirst()
+                            )
+                            .map(annotation -> PsiJavaUtils.getFirstValueInAnnotation(annotation, "value"))
+                            .orElse(null);
+                    data.put("class", Collections.singletonMap("requestMappingValue", classRequestMappingValue));
+
+                    Map<String, Object> methodData = new HashMap<>();
+                    // 方法名
+                    methodData.put("name", method.getName());
+
+                    // 方法参数
+                    final PsiParameterList parameterList = method.getParameterList();
+                    final PsiParameter[] parameters = parameterList.getParameters();
+                    final List<Map<String, Object>> parametersData = Arrays.stream(parameters).map(parameter -> {
+                        Map<String, Object> parameterData = new HashMap<>(2);
+                        parameterData.put("name", parameter.getName());
+                        parameterData.put("type", Optional.ofNullable(parameter.getTypeElement())
+                                .map(PsiJavaUtils::getTypeQualifiedName)
+                                .map(v -> this.convertType(v))
+                                .orElse(null));
+                        return parameterData;
+                    }).collect(Collectors.toList());
+                    methodData.put("parameters", parametersData);
+
+                    // 方法返回类型
+                    String returnTypeName = null;
+                    final PsiTypeElement returnTypeElement = method.getReturnTypeElement();
+                    if(returnTypeElement != null){
+                        final PsiType returnType = returnTypeElement.getType();
+                        if(returnType instanceof PsiClassReferenceType){
+                            final PsiClassReferenceType type = (PsiClassReferenceType) returnType;
+                            if("Response".equals(type.getClassName())) {
+                                final PsiType[] returnTypeParameters = type.getParameters();
+                                if(returnTypeParameters.length == 1){
+                                    returnTypeName = PsiJavaUtils.getTypeQualifiedName(returnTypeParameters[0]);
+                                }
+                            }
+                        }
+                        returnTypeName = Optional.ofNullable(returnTypeName).orElseGet(() -> PsiJavaUtils.getTypeQualifiedName(returnTypeElement));
+                    }
+                    methodData.put("returnType", Optional.ofNullable(returnTypeName).map(v -> this.convertType(v)).orElse(null));
+
+                    // 方法上的 requestMapping 的值
+                    final String methodRequestMappingValue = Arrays.stream(method.getAnnotations())
+                            .filter(annotation -> mappingMap.contains(annotation.getQualifiedName()))
+                            .findFirst()
+                            .map(annotation -> PsiJavaUtils.getFirstValueInAnnotation(annotation, "value"))
+                            .orElse(null);
+                    methodData.put("requestMappingValue", methodRequestMappingValue);
+
+                    data.put("method", methodData);
+                }
+                System.out.println(data);
+                return data;
+            }
+        };
+
+        final TemplateResultGenerator[] templateResultGenerators = {tsType, allFieldName, tsApi};
 
         ListPopup listPopup = JBPopupFactory.getInstance().createListPopup(
                 new BaseListPopupStep<TemplateResultGenerator>("您想 CV 什么？", templateResultGenerators) {
