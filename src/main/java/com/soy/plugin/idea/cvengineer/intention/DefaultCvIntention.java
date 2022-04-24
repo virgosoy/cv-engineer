@@ -50,23 +50,10 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
         logger.debug("使用 CV 工程师");
 
-        final PsiClass clazz = PsiTreeUtil.getParentOfType(element, PsiClass.class, false);
-        if(clazz == null){
+        Map<String, Object> data = parseModel(element);
+        if (data == null) {
             return;
         }
-        String className = clazz.getName();
-
-        PsiField[] fields = clazz.getAllFields();
-        List<Map<String, String>> fieldList = Arrays.stream(fields).map(f -> {
-            Map<String, String> result = new HashMap<>(2);
-            result.put("name", f.getName());
-            result.put("type", PsiJavaUtils.getTypeQualifiedNameByField(f));
-            return result;
-        }).collect(Collectors.toList());
-
-        Map<String, Object> data = new HashMap<>(2);
-        data.put("class", className);
-        data.put("fields", fieldList);
 
         final BaseTemplateResultGenerator tsType = new BaseTsTemplateResultGenerator("TS声明", "tsType") {
 
@@ -212,6 +199,28 @@ public class DefaultCvIntention extends PsiElementBaseIntentionAction implements
                 }
         );
         listPopup.showInBestPositionFor(editor);
+    }
+
+    @Nullable
+    private Map<String, Object> parseModel(@NotNull PsiElement element) {
+        final PsiClass clazz = PsiTreeUtil.getParentOfType(element, PsiClass.class, false);
+        if(clazz == null){
+            return null;
+        }
+        String className = clazz.getName();
+
+        PsiField[] fields = clazz.getAllFields();
+        List<Map<String, String>> fieldList = Arrays.stream(fields).map(f -> {
+            Map<String, String> result = new HashMap<>(2);
+            result.put("name", f.getName());
+            result.put("type", PsiJavaUtils.getTypeQualifiedNameByField(f));
+            return result;
+        }).collect(Collectors.toList());
+
+        Map<String, Object> data = new HashMap<>(2);
+        data.put("class", className);
+        data.put("fields", fieldList);
+        return data;
     }
 
     @Override
