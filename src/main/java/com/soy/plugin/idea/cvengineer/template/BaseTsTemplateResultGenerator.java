@@ -28,7 +28,8 @@ public abstract class BaseTsTemplateResultGenerator extends BaseTemplateResultGe
             "java.time.LocalDate", "string",
             "java.time.LocalDateTime", "string",
             "java.math.BigDecimal", "string",
-            "java.util.List", "Array"
+            "java.util.List", "Array",
+            "java.util.Map", "Record"
     );
 
     protected String convertType(@NotNull String javaType){
